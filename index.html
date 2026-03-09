@@ -10,33 +10,34 @@
 <style>
 
 body{
-font-family:Arial;
+font-family:-apple-system,Arial;
 margin:0;
-background:#f2f2f2;
+background:#f2f2f7;
 }
 
 header{
 background:#007aff;
 color:white;
-padding:15px;
+padding:18px;
 text-align:center;
 font-size:22px;
+font-weight:bold;
 }
 
 nav{
 display:flex;
 justify-content:center;
-gap:15px;
+gap:10px;
 margin:15px;
 }
 
 button{
-padding:10px 15px;
+padding:10px 14px;
 border:none;
 background:#007aff;
 color:white;
-border-radius:8px;
-font-size:16px;
+border-radius:10px;
+font-size:15px;
 }
 
 .container{
@@ -44,21 +45,38 @@ max-width:900px;
 margin:auto;
 background:white;
 padding:20px;
-border-radius:10px;
-box-shadow:0 0 10px rgba(0,0,0,0.1);
+border-radius:14px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
 }
 
 input{
 padding:10px;
-margin:5px;
+margin:6px;
 font-size:16px;
+border-radius:8px;
+border:1px solid #ccc;
 }
 
 .stats{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:10px;
+margin-top:15px;
+}
+
+.statBox{
+background:#f2f2f7;
+padding:12px;
+border-radius:10px;
+text-align:center;
+font-size:16px;
+}
+
+.chartFilter{
+margin-bottom:15px;
 display:flex;
-justify-content:space-around;
-margin:20px 0;
-font-size:18px;
+gap:8px;
+flex-wrap:wrap;
 }
 
 </style>
@@ -78,28 +96,60 @@ Gewicht Tracker
 
 <div id="home" class="container">
 
-<h2>Startdaten</h2>
+<h3>Startdaten</h3>
 
 <div>
+
 Startgewicht (kg)
+
 <input type="number" id="startWeight">
 
+Zielgewicht (kg)
+
+<input type="number" id="goalWeight">
+
 Körpergröße (cm)
+
 <input type="number" id="height">
 
 <button onclick="saveStart()">Speichern</button>
+
 </div>
 
 
 <div class="stats">
-<div>Start BMI: <span id="startBMI">-</span></div>
-<div>Aktueller BMI: <span id="currentBMI">-</span></div>
+
+<div class="statBox">
+Start BMI<br>
+<span id="startBMI">-</span>
+</div>
+
+<div class="statBox">
+Aktueller BMI<br>
+<span id="currentBMI">-</span>
+</div>
+
+<div class="statBox">
+Veränderung<br>
+<span id="diffWeight">-</span>
+</div>
+
+<div class="statBox">
+Noch bis Ziel<br>
+<span id="goalDiff">-</span>
+</div>
+
+<div class="statBox">
+Wochendurchschnitt<br>
+<span id="weekAvg">-</span>
+</div>
+
 </div>
 
 
-<h2>Gewichtsentwicklung</h2>
+<h3 style="margin-top:20px;">Gewichtsentwicklung</h3>
 
-<div style="margin-bottom:15px;">
+<div class="chartFilter">
 <button onclick="updateChart('week')">Woche</button>
 <button onclick="updateChart('month')">Monat</button>
 <button onclick="updateChart('year')">Jahr</button>
@@ -111,144 +161,198 @@ Körpergröße (cm)
 </div>
 
 
-
 <div id="entry" class="container" style="display:none">
 
-<h2>Tagesgewicht</h2>
+<h3>Tagesgewicht eintragen</h3>
 
 Datum
+
 <input type="date" id="date">
 
 Gewicht (kg)
+
 <input type="number" id="weight">
+
+<br>
 
 <button onclick="addWeight()">Speichern</button>
 
 </div>
 
 
-
 <script>
 
-let chart;
+let chart
 
 function showPage(page){
 
-document.getElementById("home").style.display="none";
-document.getElementById("entry").style.display="none";
+document.getElementById("home").style.display="none"
+document.getElementById("entry").style.display="none"
 
-document.getElementById(page).style.display="block";
+document.getElementById(page).style.display="block"
 
 }
+
 
 function saveStart(){
 
-let startWeight=document.getElementById("startWeight").value;
-let height=document.getElementById("height").value;
+localStorage.setItem("startWeight",document.getElementById("startWeight").value)
+localStorage.setItem("goalWeight",document.getElementById("goalWeight").value)
+localStorage.setItem("height",document.getElementById("height").value)
 
-localStorage.setItem("startWeight",startWeight);
-localStorage.setItem("height",height);
-
-calculateBMI();
+updateStats()
 
 }
 
-function calculateBMI(){
-
-let startWeight=localStorage.getItem("startWeight");
-let height=localStorage.getItem("height");
-
-let data=JSON.parse(localStorage.getItem("weights") || "[]");
-
-let currentWeight=startWeight;
-
-if(data.length>0){
-
-currentWeight=data[data.length-1].weight;
-
-}
-
-let h=height/100;
-
-let startBMI=(startWeight/(h*h)).toFixed(1);
-let currentBMI=(currentWeight/(h*h)).toFixed(1);
-
-document.getElementById("startBMI").innerText=startBMI;
-document.getElementById("currentBMI").innerText=currentBMI;
-
-}
 
 function addWeight(){
 
-let date=document.getElementById("date").value;
-let weight=document.getElementById("weight").value;
+let data=JSON.parse(localStorage.getItem("weights")||"[]")
 
-let data=JSON.parse(localStorage.getItem("weights") || "[]");
+data.push({
+date:document.getElementById("date").value,
+weight:parseFloat(document.getElementById("weight").value)
+})
 
-data.push({date:date,weight:weight});
+data.sort((a,b)=>new Date(a.date)-new Date(b.date))
 
-localStorage.setItem("weights",JSON.stringify(data));
+localStorage.setItem("weights",JSON.stringify(data))
 
-alert("Gewicht gespeichert");
+updateStats()
+updateChart("all")
 
-updateChart("all");
-calculateBMI();
+alert("Gespeichert")
 
 }
+
+
+function updateStats(){
+
+let startWeight=parseFloat(localStorage.getItem("startWeight"))
+let goalWeight=parseFloat(localStorage.getItem("goalWeight"))
+let height=parseFloat(localStorage.getItem("height"))
+
+let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+if(!startWeight || !height) return
+
+let current=startWeight
+
+if(data.length>0){
+
+current=data[data.length-1].weight
+
+}
+
+let h=height/100
+
+let startBMI=(startWeight/(h*h)).toFixed(1)
+let currentBMI=(current/(h*h)).toFixed(1)
+
+document.getElementById("startBMI").innerText=startBMI
+document.getElementById("currentBMI").innerText=currentBMI
+
+let diff=(current-startWeight).toFixed(1)
+
+document.getElementById("diffWeight").innerText=diff+" kg"
+
+if(goalWeight){
+
+let goal=(current-goalWeight).toFixed(1)
+
+document.getElementById("goalDiff").innerText=goal+" kg"
+
+}
+
+calculateWeekAverage()
+
+}
+
+
+function calculateWeekAverage(){
+
+let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+let now=new Date()
+
+let week=[]
+
+data.forEach(e=>{
+
+let d=new Date(e.date)
+
+let diff=(now-d)/(1000*60*60*24)
+
+if(diff<=7){
+
+week.push(e.weight)
+
+}
+
+})
+
+if(week.length==0) return
+
+let avg=week.reduce((a,b)=>a+b)/week.length
+
+document.getElementById("weekAvg").innerText=avg.toFixed(1)+" kg"
+
+}
+
 
 function updateChart(range){
 
-let data=JSON.parse(localStorage.getItem("weights") || "[]");
+let data=JSON.parse(localStorage.getItem("weights")||"[]")
 
-let labels=[];
-let values=[];
+let labels=[]
+let values=[]
 
-let now=new Date();
+let now=new Date()
 
-data.forEach(entry=>{
+data.forEach(e=>{
 
-let d=new Date(entry.date);
+let d=new Date(e.date)
 
-let diff=(now-d)/(1000*60*60*24);
+let diff=(now-d)/(1000*60*60*24)
 
-let include=false;
+let show=false
 
-if(range=="week" && diff<=7) include=true;
-if(range=="month" && diff<=30) include=true;
-if(range=="year" && diff<=365) include=true;
-if(range=="all") include=true;
+if(range=="week" && diff<=7) show=true
+if(range=="month" && diff<=30) show=true
+if(range=="year" && diff<=365) show=true
+if(range=="all") show=true
 
-if(include){
+if(show){
 
-labels.push(entry.date);
-values.push(entry.weight);
+labels.push(e.date)
+values.push(e.weight)
 
 }
 
-});
+})
 
-if(chart){
-chart.destroy();
-}
+if(chart) chart.destroy()
 
 chart=new Chart(document.getElementById("chart"),{
 
-type:"bar",
+type:"line",
 
 data:{
 labels:labels,
 datasets:[{
-label:"Gewicht (kg)",
-data:values
+label:"Gewicht",
+data:values,
+tension:0.3
 }]
 }
 
-});
+})
 
 }
 
-updateChart("all");
-calculateBMI();
+
+updateStats()
+updateChart("all")
 
 </script>
 
