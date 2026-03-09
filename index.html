@@ -8,20 +8,26 @@
 <style>
 body{font-family:-apple-system,Arial;margin:0;background:#f2f2f7;}
 header{background:#007aff;color:white;padding:18px;text-align:center;font-size:22px;font-weight:bold;}
-nav{display:flex;justify-content:center;gap:10px;margin:15px;}
+nav{display:flex;justify-content:center;gap:10px;margin:15px;flex-wrap:wrap;}
 button{padding:10px 14px;border:none;background:#007aff;color:white;border-radius:10px;font-size:15px;cursor:pointer;}
 .container{max-width:900px;margin:auto;background:white;padding:20px;border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,0.1);}
-input{padding:6px;font-size:15px;border-radius:8px;border:1px solid #ccc;margin:5px;}
-.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:15px;}
+input{padding:8px;font-size:16px;border-radius:8px;border:1px solid #ccc;margin:5px;max-width:100%;}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:15px;}
 .statBox{background:#f2f2f7;padding:12px;border-radius:10px;text-align:center;font-size:16px;}
-table{width:100%;border-collapse:collapse;margin-top:20px;table-layout:auto;}
-th,td{padding:6px;border-bottom:1px solid #ddd;text-align:center;word-break:break-word; display:flex; justify-content:center; align-items:center; gap:5px;}
+table{width:100%;border-collapse:collapse;margin-top:20px;table-layout:auto;overflow-x:auto;display:block;}
+td{padding:6px;border-bottom:1px solid #ddd;text-align:center;word-break:break-word; display:flex; justify-content:center; align-items:center; gap:5px;}
 td input{width:70px;}
-td button{padding:4px 8px;font-size:14px;margin:0 2px;}
+td button{padding:6px 10px;font-size:14px;margin:0 2px;}
 .deleteBtn{background:#ff3b30;}
 .resetBtn{background:#ff3b30;margin-top:15px;}
 #filter{margin:10px 0;font-size:16px;padding:6px;}
 .recommend{margin-top:10px;font-size:15px;color:#555;}
+@media(max-width:500px){
+  nav{flex-direction:column;}
+  td{flex-direction:column; gap:4px;}
+  td input{width:80%;}
+  td button{width:80%;}
+}
 </style>
 </head>
 <body>
@@ -46,8 +52,8 @@ Geburtsjahr<input type="number" id="birthYear" onchange="saveStart()">
 <div class="recommend" id="ageBMIComment">BMI Kommentar: -</div>
 
 <div class="stats">
-<div class="statBox">Start BMI<br><span id="startBMI">-</span></div>
-<div class="statBox">Aktueller BMI<br><span id="currentBMI">-</span></div>
+<div class="statBox" id="startBMIBox">Start BMI<br><span id="startBMI">-</span></div>
+<div class="statBox" id="currentBMIBox">Aktueller BMI<br><span id="currentBMI">-</span></div>
 <div class="statBox">Veränderung<br><span id="diffWeight">-</span></div>
 <div class="statBox">Noch bis Ziel<br><span id="goalDiff">-</span></div>
 <div class="statBox">Wochendurchschnitt<br><span id="weekAvg">-</span></div>
@@ -82,162 +88,176 @@ Gewicht (kg)<input type="number" id="weight">
 </div>
 
 <script>
-let chart
+let chart;
 
 function showPage(page){
-document.getElementById("home").style.display="none"
-document.getElementById("entry").style.display="none"
-document.getElementById(page).style.display="block"
-renderTable()
-setDefaultDate()
+document.getElementById("home").style.display="none";
+document.getElementById("entry").style.display="none";
+document.getElementById(page).style.display="block";
+renderTable();
+setDefaultDate();
 }
 
 function saveStart(){
-localStorage.setItem("startWeight",document.getElementById("startWeight").value)
-localStorage.setItem("goalWeight",document.getElementById("goalWeight").value)
-localStorage.setItem("height",document.getElementById("height").value)
-localStorage.setItem("birthYear",document.getElementById("birthYear").value)
-updateStats()
-updateChart()
+localStorage.setItem("startWeight",document.getElementById("startWeight").value);
+localStorage.setItem("goalWeight",document.getElementById("goalWeight").value);
+localStorage.setItem("height",document.getElementById("height").value);
+localStorage.setItem("birthYear",document.getElementById("birthYear").value);
+updateStats();
+updateChart();
 }
 
 function addWeight(){
-let data=JSON.parse(localStorage.getItem("weights")||"[]")
-data.push({date:document.getElementById("date").value,weight:parseFloat(document.getElementById("weight").value)})
-localStorage.setItem("weights",JSON.stringify(data))
-renderTable()
-updateStats()
-updateChart()
+let data=JSON.parse(localStorage.getItem("weights")||"[]");
+data.push({date:document.getElementById("date").value,weight:parseFloat(document.getElementById("weight").value)});
+localStorage.setItem("weights",JSON.stringify(data));
+renderTable();
+updateStats();
+updateChart();
 }
 
 function renderTable(){
-let data=JSON.parse(localStorage.getItem("weights")||[])
-data.sort((a,b)=> new Date(b.date)-new Date(a.date))
-let table=document.getElementById("weightTable")
-table.innerHTML=""
-data.forEach((e,i)=>{
-table.innerHTML+=`<tr>
+let data=JSON.parse(localStorage.getItem("weights")||[]);
+data.sort((a,b)=> new Date(b.date)-new Date(a.date));
+let table=document.getElementById("weightTable");
+table.innerHTML="";
+for(let i=0;i<data.length;i++){
+let e=data[i];
+let prevWeight=(i<data.length-1?data[i+1].weight:null);
+let bg="";
+if(prevWeight!==null){
+if(e.weight>prevWeight) bg="#ffcccc";
+else if(e.weight<prevWeight) bg="#ccffcc";
+}
+table.innerHTML+=`<tr style="background:${bg}">
 <td><input type="date" value="${e.date}" id="date${i}"></td>
 <td><input type="number" value="${e.weight}" id="weight${i}"></td>
 <td><button onclick="saveEdit(${i})">💾</button></td>
 <td><button class="deleteBtn" onclick="deleteEntry(${i})">X</button></td>
-</tr>`
-})
+</tr>`;
+}
 }
 
 function saveEdit(i){
-let data=JSON.parse(localStorage.getItem("weights")||[])
-data.sort((a,b)=> new Date(b.date)-new Date(a.date))
-data[i].date=document.getElementById("date"+i).value
-data[i].weight=parseFloat(document.getElementById("weight"+i).value)
-localStorage.setItem("weights",JSON.stringify(data))
-updateStats()
-updateChart()
+let data=JSON.parse(localStorage.getItem("weights")||[]);
+data.sort((a,b)=> new Date(b.date)-new Date(a.date));
+data[i].date=document.getElementById("date"+i).value;
+data[i].weight=parseFloat(document.getElementById("weight"+i).value);
+localStorage.setItem("weights",JSON.stringify(data));
+updateStats();
+updateChart();
 }
 
 function deleteEntry(i){
-let data=JSON.parse(localStorage.getItem("weights")||[])
-data.sort((a,b)=> new Date(b.date)-new Date(a.date))
-data.splice(i,1)
-localStorage.setItem("weights",JSON.stringify(data))
-renderTable()
-updateStats()
-updateChart()
+let data=JSON.parse(localStorage.getItem("weights")||[]);
+data.sort((a,b)=> new Date(b.date)-new Date(a.date));
+data.splice(i,1);
+localStorage.setItem("weights",JSON.stringify(data));
+renderTable();
+updateStats();
+updateChart();
 }
 
 function resetApp(){
 if(confirm("Alle Daten wirklich löschen?")){
-localStorage.clear()
-location.reload()
+localStorage.clear();
+location.reload();
 }
 }
 
 function updateStats(){
-let startWeight=parseFloat(localStorage.getItem("startWeight"))
-let goalWeight=parseFloat(localStorage.getItem("goalWeight"))
-let height=parseFloat(localStorage.getItem("height"))
-let birthYear=parseInt(localStorage.getItem("birthYear"))
-let data=JSON.parse(localStorage.getItem("weights")||[])
+let startWeight=parseFloat(localStorage.getItem("startWeight"));
+let goalWeight=parseFloat(localStorage.getItem("goalWeight"));
+let height=parseFloat(localStorage.getItem("height"));
+let birthYear=parseInt(localStorage.getItem("birthYear"));
+let data=JSON.parse(localStorage.getItem("weights")||[]);
 
-document.getElementById("startWeight").value=startWeight||""
-document.getElementById("goalWeight").value=goalWeight||""
-document.getElementById("height").value=height||""
-document.getElementById("birthYear").value=birthYear||""
+document.getElementById("startWeight").value=startWeight||"";
+document.getElementById("goalWeight").value=goalWeight||"";
+document.getElementById("height").value=height||"";
+document.getElementById("birthYear").value=birthYear||"";
 
 // Normalgewicht Empfehlung
 if(height){
-let h=height/100
-let min=18.5*h*h
-let max=24.9*h*h
-document.getElementById("normalWeightRec").innerText=`Empfohlen: ${min.toFixed(1)}–${max.toFixed(1)} kg`
-} else {document.getElementById("normalWeightRec").innerText="Empfohlen: - kg"}
+let h=height/100;
+let min=18.5*h*h;
+let max=24.9*h*h;
+document.getElementById("normalWeightRec").innerText=`Empfohlen: ${min.toFixed(1)}–${max.toFixed(1)} kg`;
+} else {document.getElementById("normalWeightRec").innerText="Empfohlen: - kg";}
 
-// Alter BMI Kommentar
-let current=startWeight
-if(data.length>0){data.sort((a,b)=> new Date(a.date)-new Date(b.date));current=data[data.length-1].weight}
-if(height && birthYear){
-let age=(new Date()).getFullYear()-birthYear
-let bmi=(current/(height/100)**2)
-let comment=""
-if(bmi<18.5) comment="Untergewicht"
-else if(bmi<25) comment="Normalgewicht"
-else if(bmi<30) comment="Übergewicht"
-else comment="Adipositas"
-document.getElementById("ageBMIComment").innerText=`BMI Kommentar (${age} Jahre): ${comment}`
-} else {document.getElementById("ageBMIComment").innerText="BMI Kommentar: -"}
+// BMI Kommentar + Farblich
+let current=startWeight;
+if(data.length>0){data.sort((a,b)=> new Date(a.date)-new Date(b.date));current=data[data.length-1].weight;}
+let startBMI=startWeight && height?startWeight/(height/100)**2:null;
+let currentBMI=current && height?current/(height/100)**2:null;
+document.getElementById("startBMI").innerText=startBMI?startBMI.toFixed(1):"-";
+document.getElementById("currentBMI").innerText=currentBMI?currentBMI.toFixed(1):"-";
 
-if(!startWeight || !height) return
+// BMI Farben
+function bmiColor(bmi){if(bmi<18.5) return "#add8e6"; else if(bmi<25) return "#ccffcc"; else if(bmi<30) return "#ffcc80"; else return "#ff9999";}
+document.getElementById("startBMIBox").style.background=bmiColor(startBMI);
+document.getElementById("currentBMIBox").style.background=bmiColor(currentBMI);
 
-let h=height/100
-document.getElementById("startBMI").innerText=(startWeight/(h*h)).toFixed(1)
-document.getElementById("currentBMI").innerText=(current/(h*h)).toFixed(1)
-document.getElementById("diffWeight").innerText=(current-startWeight).toFixed(1)+" kg"
-if(goalWeight){document.getElementById("goalDiff").innerText=(current-goalWeight).toFixed(1)+" kg"}
+// Altersgerechter Kommentar
+if(currentBMI && birthYear){
+let age=(new Date()).getFullYear()-birthYear;
+let comment="";
+if(currentBMI<18.5) comment="Untergewicht";
+else if(currentBMI<25) comment="Normalgewicht";
+else if(currentBMI<30) comment="Übergewicht";
+else comment="Adipositas";
+document.getElementById("ageBMIComment").innerText=`BMI Kommentar (${age} Jahre): ${comment}`;
+} else {document.getElementById("ageBMIComment").innerText="BMI Kommentar: -";}
+
+// Gewichtsdifferenzen
+document.getElementById("diffWeight").innerText=current&&startWeight?(current-startWeight).toFixed(1)+" kg":"-";
+if(goalWeight){document.getElementById("goalDiff").innerText=(current-goalWeight).toFixed(1)+" kg";}
 
 // Wochen-Durchschnitt
-let now=new Date(),week=[]
+let now=new Date(),week=[];
 data.forEach(e=>{
-let d=new Date(e.date)
-let diff=(now-d)/(1000*60*60*24)
-if(diff<=7) week.push(e.weight)})
-document.getElementById("weekAvg").innerText=(week.length>0?(week.reduce((a,b)=>a+b)/week.length).toFixed(1)+" kg":"-")
+let d=new Date(e.date);
+let diff=(now-d)/(1000*60*60*24);
+if(diff<=7) week.push(e.weight);
+});
+document.getElementById("weekAvg").innerText=(week.length>0?(week.reduce((a,b)=>a+b)/week.length).toFixed(1)+" kg":"-");
 
 // Bestes Gewicht
-document.getElementById("bestWeight").innerText=(data.length>0?Math.min(...data.map(e=>e.weight)).toFixed(1)+" kg":"-")
+document.getElementById("bestWeight").innerText=(data.length>0?Math.min(...data.map(e=>e.weight)).toFixed(1)+" kg":"-");
 
-updateTrend(data,startWeight,goalWeight)
+updateTrend(data,startWeight,goalWeight);
 }
 
 function updateChart(){
-let data=JSON.parse(localStorage.getItem("weights")||"[]")
-data.sort((a,b)=> new Date(a.date)-new Date(b.date))
-const filter=document.getElementById("filter").value
-const now=new Date()
+let data=JSON.parse(localStorage.getItem("weights")||"[]");
+data.sort((a,b)=> new Date(a.date)-new Date(b.date));
+const filter=document.getElementById("filter").value;
+const now=new Date();
 let filtered=data.filter(e=>{
-let d=new Date(e.date)
-if(filter=="week") return (now-d)/(1000*60*60*24)<=7
-if(filter=="month") return (now-d)/(1000*60*60*24)<=30
-if(filter=="year") return (now-d)/(1000*60*60*24)<=365
-return true
-})
-let labels=filtered.map(e=>e.date)
-let values=filtered.map(e=>e.weight)
+let d=new Date(e.date);
+if(filter=="week") return (now-d)/(1000*60*60*24)<=7;
+if(filter=="month") return (now-d)/(1000*60*60*24)<=30;
+if(filter=="year") return (now-d)/(1000*60*60*24)<=365;
+return true;
+});
+let labels=filtered.map(e=>e.date);
+let values=filtered.map(e=>e.weight);
 
-let goalWeight=parseFloat(localStorage.getItem("goalWeight"))
+let goalWeight=parseFloat(localStorage.getItem("goalWeight"));
 
-// Prognose Linie berechnen
-let trendLine=[]
+// Prognose Linie
+let trendLine=[];
 if(data.length>1 && goalWeight){
-data.sort((a,b)=> new Date(a.date)-new Date(b.date))
-let first=data[0].weight,last=data[data.length-1].weight
-let days=(new Date(data[data.length-1].date)-new Date(data[0].date))/(1000*60*60*24)
+data.sort((a,b)=> new Date(a.date)-new Date(b.date));
+let first=data[0].weight,last=data[data.length-1].weight;
+let days=(new Date(data[data.length-1].date)-new Date(data[0].date))/(1000*60*60*24);
 if(days>0){
-let rate=(last-first)/days
-trendLine=labels.map((l,i)=> last + rate*(i))
+let rate=(last-first)/days;
+trendLine=labels.map((l,i)=> last + rate*(i));
 }
 }
 
-if(chart) chart.destroy()
+if(chart) chart.destroy();
 chart=new Chart(document.getElementById("chart"),{
 type:"line",
 data:{labels:labels,datasets:[
@@ -245,34 +265,42 @@ data:{labels:labels,datasets:[
 (goalWeight?{label:"Zielgewicht",data:Array(labels.length).fill(goalWeight),borderColor:"#ff3b30",borderDash:[5,5],fill:false}:null),
 (trendLine.length>0?{label:"Prognose Gewicht",data:trendLine,borderColor:"#34c759",borderDash:[5,5],fill:false}:null)
 ].filter(Boolean)},
-options:{plugins:{legend:{display:true}}}
-})
+options:{
+plugins:{legend:{display:true}},
+responsive:true,
+maintainAspectRatio:false,
+scales:{
+y:{beginAtZero:false}
+},
+interaction:{mode:'index',intersect:false},
+}
+});
 }
 
 function updateTrend(data,startWeight,goalWeight){
-let trendEl=document.getElementById("trend")
-trendEl.innerText=""
-if(!goalWeight || data.length<2) return
-data.sort((a,b)=> new Date(a.date)-new Date(b.date))
-let first=data[0].weight,last=data[data.length-1].weight
-let days=(new Date(data[data.length-1].date)-new Date(data[0].date))/(1000*60*60*24)
-if(days<=0) return
-let rate=(last-first)/days
-if(rate==0) return
-let remaining=goalWeight-last
-let daysToGoal=Math.round(remaining/rate)
-let estDate=new Date()
-estDate.setDate(estDate.getDate()+daysToGoal)
-trendEl.innerText=`Prognose Zielgewicht: ca. ${estDate.toLocaleDateString()} (${daysToGoal} Tage)`
+let trendEl=document.getElementById("trend");
+trendEl.innerText="";
+if(!goalWeight || data.length<2) return;
+data.sort((a,b)=> new Date(a.date)-new Date(b.date));
+let first=data[0].weight,last=data[data.length-1].weight;
+let days=(new Date(data[data.length-1].date)-new Date(data[0].date))/(1000*60*60*24);
+if(days<=0) return;
+let rate=(last-first)/days;
+if(rate==0) return;
+let remaining=goalWeight-last;
+let daysToGoal=Math.round(remaining/rate);
+let estDate=new Date();
+estDate.setDate(estDate.getDate()+daysToGoal);
+trendEl.innerText=`Prognose Zielgewicht: ca. ${estDate.toLocaleDateString()} (${daysToGoal} Tage)`;
 }
 
 function setDefaultDate(){
-document.getElementById("date").value=new Date().toISOString().substr(0,10)
+document.getElementById("date").value=new Date().toISOString().substr(0,10);
 }
 
-updateStats()
-updateChart()
-setDefaultDate()
+updateStats();
+updateChart();
+setDefaultDate();
 </script>
 
 </body>
