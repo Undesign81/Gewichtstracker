@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gewicht Tracker</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+body{
+font-family:Arial;
+margin:0;
+background:#f2f2f2;
+}
+
+header{
+background:#007aff;
+color:white;
+padding:15px;
+text-align:center;
+font-size:22px;
+}
+
+nav{
+display:flex;
+justify-content:center;
+gap:15px;
+margin:15px;
+}
+
+button{
+padding:10px 15px;
+border:none;
+background:#007aff;
+color:white;
+border-radius:8px;
+font-size:16px;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+input{
+padding:10px;
+margin:5px;
+font-size:16px;
+}
+
+.stats{
+display:flex;
+justify-content:space-around;
+margin:20px 0;
+font-size:18px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+Gewicht Tracker
+</header>
+
+<nav>
+<button onclick="showPage('home')">Übersicht</button>
+<button onclick="showPage('entry')">Gewicht eintragen</button>
+</nav>
+
+
+<div id="home" class="container">
+
+<h2>Startdaten</h2>
+
+<div>
+Startgewicht (kg)
+<input type="number" id="startWeight">
+
+Körpergröße (cm)
+<input type="number" id="height">
+
+<button onclick="saveStart()">Speichern</button>
+</div>
+
+
+<div class="stats">
+<div>Start BMI: <span id="startBMI">-</span></div>
+<div>Aktueller BMI: <span id="currentBMI">-</span></div>
+</div>
+
+
+<h2>Gewichtsentwicklung</h2>
+
+<div style="margin-bottom:15px;">
+<button onclick="updateChart('week')">Woche</button>
+<button onclick="updateChart('month')">Monat</button>
+<button onclick="updateChart('year')">Jahr</button>
+<button onclick="updateChart('all')">Gesamt</button>
+</div>
+
+<canvas id="chart"></canvas>
+
+</div>
+
+
+
+<div id="entry" class="container" style="display:none">
+
+<h2>Tagesgewicht</h2>
+
+Datum
+<input type="date" id="date">
+
+Gewicht (kg)
+<input type="number" id="weight">
+
+<button onclick="addWeight()">Speichern</button>
+
+</div>
+
+
+
+<script>
+
+let chart;
+
+function showPage(page){
+
+document.getElementById("home").style.display="none";
+document.getElementById("entry").style.display="none";
+
+document.getElementById(page).style.display="block";
+
+}
+
+function saveStart(){
+
+let startWeight=document.getElementById("startWeight").value;
+let height=document.getElementById("height").value;
+
+localStorage.setItem("startWeight",startWeight);
+localStorage.setItem("height",height);
+
+calculateBMI();
+
+}
+
+function calculateBMI(){
+
+let startWeight=localStorage.getItem("startWeight");
+let height=localStorage.getItem("height");
+
+let data=JSON.parse(localStorage.getItem("weights") || "[]");
+
+let currentWeight=startWeight;
+
+if(data.length>0){
+
+currentWeight=data[data.length-1].weight;
+
+}
+
+let h=height/100;
+
+let startBMI=(startWeight/(h*h)).toFixed(1);
+let currentBMI=(currentWeight/(h*h)).toFixed(1);
+
+document.getElementById("startBMI").innerText=startBMI;
+document.getElementById("currentBMI").innerText=currentBMI;
+
+}
+
+function addWeight(){
+
+let date=document.getElementById("date").value;
+let weight=document.getElementById("weight").value;
+
+let data=JSON.parse(localStorage.getItem("weights") || "[]");
+
+data.push({date:date,weight:weight});
+
+localStorage.setItem("weights",JSON.stringify(data));
+
+alert("Gewicht gespeichert");
+
+updateChart("all");
+calculateBMI();
+
+}
+
+function updateChart(range){
+
+let data=JSON.parse(localStorage.getItem("weights") || "[]");
+
+let labels=[];
+let values=[];
+
+let now=new Date();
+
+data.forEach(entry=>{
+
+let d=new Date(entry.date);
+
+let diff=(now-d)/(1000*60*60*24);
+
+let include=false;
+
+if(range=="week" && diff<=7) include=true;
+if(range=="month" && diff<=30) include=true;
+if(range=="year" && diff<=365) include=true;
+if(range=="all") include=true;
+
+if(include){
+
+labels.push(entry.date);
+values.push(entry.weight);
+
+}
+
+});
+
+if(chart){
+chart.destroy();
+}
+
+chart=new Chart(document.getElementById("chart"),{
+
+type:"bar",
+
+data:{
+labels:labels,
+datasets:[{
+label:"Gewicht (kg)",
+data:values
+}]
+}
+
+});
+
+}
+
+updateChart("all");
+calculateBMI();
+
+</script>
+
+</body>
+</html>
