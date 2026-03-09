@@ -19,6 +19,7 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center;}
 .deleteBtn{background:#ff3b30;}
 .resetBtn{background:#ff3b30;margin-top:15px;}
 #filter{margin:10px 0;font-size:16px;padding:6px;}
+.recommend{margin-top:10px;font-size:15px;color:#555;}
 </style>
 </head>
 <body>
@@ -38,6 +39,8 @@ Zielgewicht (kg)<input type="number" id="goalWeight" onchange="saveStart()">
 Körpergröße (cm)<input type="number" id="height" onchange="saveStart()">
 <button class="resetBtn" onclick="resetApp()">App komplett zurücksetzen</button>
 
+<div class="recommend" id="normalWeightRec">Empfohlen: - kg</div>
+
 <div class="stats">
 <div class="statBox">Start BMI<br><span id="startBMI">-</span></div>
 <div class="statBox">Aktueller BMI<br><span id="currentBMI">-</span></div>
@@ -48,7 +51,6 @@ Körpergröße (cm)<input type="number" id="height" onchange="saveStart()">
 </div>
 
 <h3 style="margin-top:20px;">Gewichtsentwicklung</h3>
-
 <select id="filter" onchange="updateChart()">
 <option value="all">Alle</option>
 <option value="week">Letzte Woche</option>
@@ -86,7 +88,6 @@ Gewicht (kg)<input type="number" id="weight">
 <script>
 let chart
 
-// Seite wechseln
 function showPage(page){
 document.getElementById("home").style.display="none"
 document.getElementById("entry").style.display="none"
@@ -95,15 +96,14 @@ renderTable()
 setDefaultDate()
 }
 
-// Startwerte speichern und permanent anzeigen
 function saveStart(){
 localStorage.setItem("startWeight",document.getElementById("startWeight").value)
 localStorage.setItem("goalWeight",document.getElementById("goalWeight").value)
 localStorage.setItem("height",document.getElementById("height").value)
 updateStats()
+updateChart()
 }
 
-// Gewicht eintragen
 function addWeight(){
 let data=JSON.parse(localStorage.getItem("weights")||"[]")
 data.push({date:document.getElementById("date").value,weight:parseFloat(document.getElementById("weight").value)})
@@ -113,7 +113,6 @@ updateStats()
 updateChart()
 }
 
-// Tabelle rendern
 function renderTable(){
 let data=JSON.parse(localStorage.getItem("weights")||[])
 data.sort((a,b)=> new Date(b.date)-new Date(a.date))
@@ -129,7 +128,6 @@ table.innerHTML+=`<tr>
 })
 }
 
-// Bearbeiten
 function saveEdit(i){
 let data=JSON.parse(localStorage.getItem("weights")||[])
 data.sort((a,b)=> new Date(b.date)-new Date(a.date))
@@ -140,7 +138,6 @@ updateStats()
 updateChart()
 }
 
-// Löschen
 function deleteEntry(i){
 let data=JSON.parse(localStorage.getItem("weights")||[])
 data.sort((a,b)=> new Date(b.date)-new Date(a.date))
@@ -151,7 +148,6 @@ updateStats()
 updateChart()
 }
 
-// Reset
 function resetApp(){
 if(confirm("Alle Daten wirklich löschen?")){
 localStorage.clear()
@@ -159,17 +155,26 @@ location.reload()
 }
 }
 
-// Stats + Trend + Bestes Gewicht
 function updateStats(){
 let startWeight=parseFloat(localStorage.getItem("startWeight"))
 let goalWeight=parseFloat(localStorage.getItem("goalWeight"))
 let height=parseFloat(localStorage.getItem("height"))
 let data=JSON.parse(localStorage.getItem("weights")||[])
 
-// Werte in Input-Feldern anzeigen
-document.getElementById("startWeight").value = startWeight||""
-document.getElementById("goalWeight").value = goalWeight||""
-document.getElementById("height").value = height||""
+// Startwerte sichtbar machen
+document.getElementById("startWeight").value=startWeight||""
+document.getElementById("goalWeight").value=goalWeight||""
+document.getElementById("height").value=height||""
+
+// Normalgewicht Empfehlung
+if(height){
+let h=height/100
+let min=18.5*h*h
+let max=24.9*h*h
+document.getElementById("normalWeightRec").innerText=`Empfohlen: ${min.toFixed(1)}–${max.toFixed(1)} kg`
+} else {
+document.getElementById("normalWeightRec").innerText="Empfohlen: - kg"
+}
 
 if(!startWeight || !height) return
 
@@ -196,9 +201,8 @@ document.getElementById("bestWeight").innerText=(data.length>0?Math.min(...data.
 updateTrend(data,startWeight,goalWeight)
 }
 
-// Diagramm
 function updateChart(){
-let data=JSON.parse(localStorage.getItem("weights")||[])
+let data=JSON.parse(localStorage.getItem("weights")||"[]")
 data.sort((a,b)=> new Date(a.date)-new Date(b.date))
 const filter=document.getElementById("filter").value
 const now=new Date()
@@ -211,14 +215,20 @@ return true
 })
 let labels=filtered.map(e=>e.date)
 let values=filtered.map(e=>e.weight)
+
+let goalWeight=parseFloat(localStorage.getItem("goalWeight"))
+
 if(chart) chart.destroy()
 chart=new Chart(document.getElementById("chart"),{
 type:"line",
-data:{labels:labels,datasets:[{label:"Gewicht",data:values,tension:0.3}]}
+data:{labels:labels,datasets:[
+{label:"Gewicht",data:values,tension:0.3,borderColor:"#007aff",backgroundColor:"rgba(0,122,255,0.1)"},
+(goalWeight?{label:"Zielgewicht",data:Array(labels.length).fill(goalWeight),borderColor:"#ff3b30",borderDash:[5,5],fill:false}:null)
+].filter(Boolean)},
+options:{plugins:{legend:{display:true}}}
 })
 }
 
-// Trend-Prognose
 function updateTrend(data,startWeight,goalWeight){
 let trendEl=document.getElementById("trend")
 trendEl.innerText=""
@@ -236,10 +246,8 @@ estDate.setDate(estDate.getDate()+daysToGoal)
 trendEl.innerText=`Prognose Zielgewicht: ca. ${estDate.toLocaleDateString()} (${daysToGoal} Tage)`
 }
 
-// Datum auf heute setzen
 function setDefaultDate(){
-let today=new Date().toISOString().substr(0,10)
-document.getElementById("date").value=today
+document.getElementById("date").value=new Date().toISOString().substr(0,10)
 }
 
 // Initial
