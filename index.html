@@ -4,98 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gewicht Tracker</title>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <style>
-body{
-font-family:-apple-system,Arial;
-margin:0;
-background:#f2f2f7;
-}
-
-header{
-background:#007aff;
-color:white;
-padding:18px;
-text-align:center;
-font-size:22px;
-font-weight:bold;
-}
-
-nav{
-display:flex;
-justify-content:center;
-gap:10px;
-margin:15px;
-}
-
-button{
-padding:10px 14px;
-border:none;
-background:#007aff;
-color:white;
-border-radius:10px;
-font-size:15px;
-cursor:pointer;
-}
-
-.container{
-max-width:900px;
-margin:auto;
-background:white;
-padding:20px;
-border-radius:14px;
-box-shadow:0 3px 10px rgba(0,0,0,0.1);
-}
-
-input{
-padding:8px;
-font-size:15px;
-border-radius:8px;
-border:1px solid #ccc;
-margin:5px;
-}
-
-.stats{
-display:grid;
-grid-template-columns:1fr 1fr 1fr;
-gap:10px;
-margin-top:15px;
-}
-
-.statBox{
-background:#f2f2f7;
-padding:12px;
-border-radius:10px;
-text-align:center;
-font-size:16px;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-margin-top:20px;
-}
-
-th,td{
-padding:8px;
-border-bottom:1px solid #ddd;
-text-align:center;
-}
-
-.deleteBtn{
-background:#ff3b30;
-}
-
-.resetBtn{
-background:#ff3b30;
-margin-top:15px;
-}
-
+body{font-family:-apple-system,Arial;margin:0;background:#f2f2f7;}
+header{background:#007aff;color:white;padding:18px;text-align:center;font-size:22px;font-weight:bold;}
+nav{display:flex;justify-content:center;gap:10px;margin:15px;}
+button{padding:10px 14px;border:none;background:#007aff;color:white;border-radius:10px;font-size:15px;cursor:pointer;}
+.container{max-width:900px;margin:auto;background:white;padding:20px;border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,0.1);}
+input{padding:8px;font-size:15px;border-radius:8px;border:1px solid #ccc;margin:5px;}
+.stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:15px;}
+.statBox{background:#f2f2f7;padding:12px;border-radius:10px;text-align:center;font-size:16px;}
+table{width:100%;border-collapse:collapse;margin-top:20px;}
+th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center;}
+.deleteBtn{background:#ff3b30;}
+.resetBtn{background:#ff3b30;margin-top:15px;}
+#filter{margin:10px 0;font-size:16px;padding:6px;}
 </style>
 </head>
-
 <body>
 
 <header>Gewicht Tracker</header>
@@ -108,58 +33,30 @@ margin-top:15px;
 <div id="home" class="container">
 
 <h3>Startdaten</h3>
-
-Startgewicht (kg)
-<input type="number" id="startWeight">
-
-Zielgewicht (kg)
-<input type="number" id="goalWeight">
-
-Körpergröße (cm)
-<input type="number" id="height">
-
-<button onclick="saveStart()">Speichern</button>
-
-<br>
-
+Startgewicht (kg)<input type="number" id="startWeight" onchange="saveStart()">
+Zielgewicht (kg)<input type="number" id="goalWeight" onchange="saveStart()">
+Körpergröße (cm)<input type="number" id="height" onchange="saveStart()">
 <button class="resetBtn" onclick="resetApp()">App komplett zurücksetzen</button>
 
 <div class="stats">
-<div class="statBox">
-Start BMI<br>
-<span id="startBMI">-</span>
-</div>
-
-<div class="statBox">
-Aktueller BMI<br>
-<span id="currentBMI">-</span>
-</div>
-
-<div class="statBox">
-Veränderung<br>
-<span id="diffWeight">-</span>
-</div>
-
-<div class="statBox">
-Noch bis Ziel<br>
-<span id="goalDiff">-</span>
-</div>
-
-<div class="statBox">
-Wochendurchschnitt<br>
-<span id="weekAvg">-</span>
-</div>
-
-<div class="statBox">
-Bestes Gewicht<br>
-<span id="bestWeight">-</span>
-</div>
+<div class="statBox">Start BMI<br><span id="startBMI">-</span></div>
+<div class="statBox">Aktueller BMI<br><span id="currentBMI">-</span></div>
+<div class="statBox">Veränderung<br><span id="diffWeight">-</span></div>
+<div class="statBox">Noch bis Ziel<br><span id="goalDiff">-</span></div>
+<div class="statBox">Wochendurchschnitt<br><span id="weekAvg">-</span></div>
+<div class="statBox">Bestes Gewicht<br><span id="bestWeight">-</span></div>
 </div>
 
 <h3 style="margin-top:20px;">Gewichtsentwicklung</h3>
 
-<canvas id="chart"></canvas>
+<select id="filter" onchange="updateChart()">
+<option value="all">Alle</option>
+<option value="week">Letzte Woche</option>
+<option value="month">Letzter Monat</option>
+<option value="year">Letztes Jahr</option>
+</select>
 
+<canvas id="chart"></canvas>
 <p id="trend" style="margin-top:10px;font-size:16px;"></p>
 
 </div>
@@ -167,17 +64,11 @@ Bestes Gewicht<br>
 <div id="entry" class="container" style="display:none">
 
 <h3>Gewicht eintragen</h3>
-
-Datum
-<input type="date" id="date">
-
-Gewicht (kg)
-<input type="number" id="weight">
-
+Datum<input type="date" id="date">
+Gewicht (kg)<input type="number" id="weight">
 <button onclick="addWeight()">Speichern</button>
 
 <h3 style="margin-top:25px;">Alle Einträge</h3>
-
 <table>
 <thead>
 <tr>
@@ -193,10 +84,9 @@ Gewicht (kg)
 </div>
 
 <script>
-
 let chart
 
-// 1️⃣ Seite wechseln
+// Seite wechseln
 function showPage(page){
 document.getElementById("home").style.display="none"
 document.getElementById("entry").style.display="none"
@@ -205,7 +95,7 @@ renderTable()
 setDefaultDate()
 }
 
-// 2️⃣ Startdaten speichern
+// Startwerte speichern und permanent anzeigen
 function saveStart(){
 localStorage.setItem("startWeight",document.getElementById("startWeight").value)
 localStorage.setItem("goalWeight",document.getElementById("goalWeight").value)
@@ -213,41 +103,36 @@ localStorage.setItem("height",document.getElementById("height").value)
 updateStats()
 }
 
-// 3️⃣ Gewicht eintragen
+// Gewicht eintragen
 function addWeight(){
 let data=JSON.parse(localStorage.getItem("weights")||"[]")
-data.push({
-date:document.getElementById("date").value,
-weight:parseFloat(document.getElementById("weight").value)
-})
+data.push({date:document.getElementById("date").value,weight:parseFloat(document.getElementById("weight").value)})
 localStorage.setItem("weights",JSON.stringify(data))
 renderTable()
 updateStats()
 updateChart()
 }
 
-// 4️⃣ Tabelle rendern (neueste oben)
+// Tabelle rendern
 function renderTable(){
 let data=JSON.parse(localStorage.getItem("weights")||[])
-data.sort((a,b)=> new Date(b.date) - new Date(a.date))
+data.sort((a,b)=> new Date(b.date)-new Date(a.date))
 let table=document.getElementById("weightTable")
 table.innerHTML=""
 data.forEach((e,i)=>{
-table.innerHTML+=`
-<tr>
+table.innerHTML+=`<tr>
 <td><input type="date" value="${e.date}" id="date${i}"></td>
 <td><input type="number" value="${e.weight}" id="weight${i}"></td>
 <td><button onclick="saveEdit(${i})">💾</button></td>
 <td><button class="deleteBtn" onclick="deleteEntry(${i})">X</button></td>
-</tr>
-`
+</tr>`
 })
 }
 
-// 5️⃣ Eintrag speichern
+// Bearbeiten
 function saveEdit(i){
 let data=JSON.parse(localStorage.getItem("weights")||[])
-data.sort((a,b)=> new Date(b.date) - new Date(a.date))
+data.sort((a,b)=> new Date(b.date)-new Date(a.date))
 data[i].date=document.getElementById("date"+i).value
 data[i].weight=parseFloat(document.getElementById("weight"+i).value)
 localStorage.setItem("weights",JSON.stringify(data))
@@ -255,10 +140,10 @@ updateStats()
 updateChart()
 }
 
-// 6️⃣ Eintrag löschen
+// Löschen
 function deleteEntry(i){
 let data=JSON.parse(localStorage.getItem("weights")||[])
-data.sort((a,b)=> new Date(b.date) - new Date(a.date))
+data.sort((a,b)=> new Date(b.date)-new Date(a.date))
 data.splice(i,1)
 localStorage.setItem("weights",JSON.stringify(data))
 renderTable()
@@ -266,7 +151,7 @@ updateStats()
 updateChart()
 }
 
-// 7️⃣ App reset
+// Reset
 function resetApp(){
 if(confirm("Alle Daten wirklich löschen?")){
 localStorage.clear()
@@ -274,62 +159,58 @@ location.reload()
 }
 }
 
-// 8️⃣ Stats + Trend + Bestes Gewicht
+// Stats + Trend + Bestes Gewicht
 function updateStats(){
 let startWeight=parseFloat(localStorage.getItem("startWeight"))
 let goalWeight=parseFloat(localStorage.getItem("goalWeight"))
 let height=parseFloat(localStorage.getItem("height"))
 let data=JSON.parse(localStorage.getItem("weights")||[])
 
+// Werte in Input-Feldern anzeigen
+document.getElementById("startWeight").value = startWeight||""
+document.getElementById("goalWeight").value = goalWeight||""
+document.getElementById("height").value = height||""
+
 if(!startWeight || !height) return
 
 let current=startWeight
-if(data.length>0){
-data.sort((a,b)=> new Date(a.date) - new Date(b.date))
-current=data[data.length-1].weight
-}
-
+if(data.length>0){data.sort((a,b)=> new Date(a.date)-new Date(b.date));current=data[data.length-1].weight}
 let h=height/100
 document.getElementById("startBMI").innerText=(startWeight/(h*h)).toFixed(1)
 document.getElementById("currentBMI").innerText=(current/(h*h)).toFixed(1)
 document.getElementById("diffWeight").innerText=(current-startWeight).toFixed(1)+" kg"
-if(goalWeight){
-document.getElementById("goalDiff").innerText=(current-goalWeight).toFixed(1)+" kg"
-}
+if(goalWeight){document.getElementById("goalDiff").innerText=(current-goalWeight).toFixed(1)+" kg"}
 
 // Wochen-Durchschnitt
-let now=new Date()
-let week=[]
+let now=new Date(),week=[]
 data.forEach(e=>{
 let d=new Date(e.date)
 let diff=(now-d)/(1000*60*60*24)
-if(diff<=7) week.push(e.weight)
-})
-if(week.length>0){
-let avg=week.reduce((a,b)=>a+b)/week.length
-document.getElementById("weekAvg").innerText=avg.toFixed(1)+" kg"
-}else{
-document.getElementById("weekAvg").innerText="-"
-}
+if(diff<=7) week.push(e.weight)})
+document.getElementById("weekAvg").innerText=(week.length>0?(week.reduce((a,b)=>a+b)/week.length).toFixed(1)+" kg":"-")
 
-// Bestes / niedrigstes Gewicht
-if(data.length>0){
-let best=Math.min(...data.map(e=>e.weight))
-document.getElementById("bestWeight").innerText=best.toFixed(1)+" kg"
-}else{
-document.getElementById("bestWeight").innerText="-"
-}
+// Bestes Gewicht
+document.getElementById("bestWeight").innerText=(data.length>0?Math.min(...data.map(e=>e.weight)).toFixed(1)+" kg":"-")
 
 // Trend-Prognose
 updateTrend(data,startWeight,goalWeight)
 }
 
-// 9️⃣ Chart rendern
+// Diagramm
 function updateChart(){
 let data=JSON.parse(localStorage.getItem("weights")||[])
-data.sort((a,b)=> new Date(a.date) - new Date(b.date))
-let labels=data.map(e=>e.date)
-let values=data.map(e=>e.weight)
+data.sort((a,b)=> new Date(a.date)-new Date(b.date))
+const filter=document.getElementById("filter").value
+const now=new Date()
+let filtered=data.filter(e=>{
+let d=new Date(e.date)
+if(filter=="week") return (now-d)/(1000*60*60*24)<=7
+if(filter=="month") return (now-d)/(1000*60*60*24)<=30
+if(filter=="year") return (now-d)/(1000*60*60*24)<=365
+return true
+})
+let labels=filtered.map(e=>e.date)
+let values=filtered.map(e=>e.weight)
 if(chart) chart.destroy()
 chart=new Chart(document.getElementById("chart"),{
 type:"line",
@@ -337,20 +218,17 @@ data:{labels:labels,datasets:[{label:"Gewicht",data:values,tension:0.3}]}
 })
 }
 
-// 10️⃣ Trend-Prognose
+// Trend-Prognose
 function updateTrend(data,startWeight,goalWeight){
 let trendEl=document.getElementById("trend")
 trendEl.innerText=""
 if(!goalWeight || data.length<2) return
-
-let first=data[0].weight
-let last=data[data.length-1].weight
-let days=(new Date(data[data.length-1].date) - new Date(data[0].date))/(1000*60*60*24)
+data.sort((a,b)=> new Date(a.date)-new Date(b.date))
+let first=data[0].weight,last=data[data.length-1].weight
+let days=(new Date(data[data.length-1].date)-new Date(data[0].date))/(1000*60*60*24)
 if(days<=0) return
-
 let rate=(last-first)/days
 if(rate==0) return
-
 let remaining=goalWeight-last
 let daysToGoal=Math.round(remaining/rate)
 let estDate=new Date()
@@ -358,17 +236,16 @@ estDate.setDate(estDate.getDate()+daysToGoal)
 trendEl.innerText=`Prognose Zielgewicht: ca. ${estDate.toLocaleDateString()} (${daysToGoal} Tage)`
 }
 
-// 11️⃣ Setzt Datum auf heute beim Öffnen der Eingabe-Seite
+// Datum auf heute setzen
 function setDefaultDate(){
 let today=new Date().toISOString().substr(0,10)
 document.getElementById("date").value=today
 }
 
-// Initial laden
+// Initial
 updateStats()
 updateChart()
 setDefaultDate()
-
 </script>
 
 </body>
