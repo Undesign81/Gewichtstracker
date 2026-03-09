@@ -240,7 +240,7 @@ return true;
 });
 if(filtered.length===0){if(chart) chart.destroy(); return;}
 
-let labels=filtered.map(e=>e.date);
+let labels=filtered.map(e=>e.date); // einfache Strings
 let values=filtered.map(e=>e.weight);
 let goalWeight=parseFloat(localStorage.getItem("goalWeight"));
 
@@ -257,18 +257,21 @@ trendLine=labels.map((l,i)=> last + rate*(i));
 if(chart) chart.destroy();
 chart=new Chart(document.getElementById("chart"),{
 type:"line",
-data:{labels:labels,datasets:[
+data:{
+labels:labels,
+datasets:[
 {label:"Gewicht",data:values,tension:0.3,borderColor:"#007aff",backgroundColor:"rgba(0,122,255,0.1)",pointRadius:3},
 (goalWeight?{label:"Zielgewicht",data:Array(labels.length).fill(goalWeight),borderColor:"#ff3b30",borderDash:[5,5],fill:false,pointRadius:0}:null),
 (trendLine.length>0?{label:"Prognose Gewicht",data:trendLine,borderColor:"#34c759",borderDash:[5,5],fill:false,pointRadius:0}:null)
-].filter(Boolean)},
+].filter(Boolean)
+},
 options:{
 responsive:true,
 maintainAspectRatio:false,
 plugins:{legend:{display:true}},
 interaction:{mode:'index',intersect:false},
 scales:{
-x:{type:'time',time:{unit:'day',tooltipFormat:'dd.MM.yyyy'},title:{display:true,text:'Datum'}},
+x:{title:{display:true,text:'Datum'}},
 y:{beginAtZero:false,suggestedMin:Math.min(...values)-5,suggestedMax:Math.max(...values)+5,title:{display:true,text:'Gewicht (kg)'}}
 }
 }
