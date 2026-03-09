@@ -22,6 +22,7 @@ td button{padding:6px 10px;font-size:14px;margin:0 2px;}
 .resetBtn{background:#ff3b30;margin-top:15px;}
 #filter{margin:10px 0;font-size:16px;padding:6px;}
 .recommend{margin-top:10px;font-size:15px;color:#555;}
+canvas{height:300px !important;}
 @media(max-width:500px){
   nav{flex-direction:column;}
   td{flex-direction:column; gap:4px;}
@@ -117,7 +118,7 @@ updateChart();
 }
 
 function renderTable(){
-let data=JSON.parse(localStorage.getItem("weights")||[]);
+let data=JSON.parse(localStorage.getItem("weights")||"[]");
 data.sort((a,b)=> new Date(b.date)-new Date(a.date));
 let table=document.getElementById("weightTable");
 table.innerHTML="";
@@ -177,7 +178,6 @@ document.getElementById("goalWeight").value=goalWeight||"";
 document.getElementById("height").value=height||"";
 document.getElementById("birthYear").value=birthYear||"";
 
-// Normalgewicht Empfehlung
 if(height){
 let h=height/100;
 let min=18.5*h*h;
@@ -185,7 +185,6 @@ let max=24.9*h*h;
 document.getElementById("normalWeightRec").innerText=`Empfohlen: ${min.toFixed(1)}–${max.toFixed(1)} kg`;
 } else {document.getElementById("normalWeightRec").innerText="Empfohlen: - kg";}
 
-// BMI Kommentar + Farblich
 let current=startWeight;
 if(data.length>0){data.sort((a,b)=> new Date(a.date)-new Date(b.date));current=data[data.length-1].weight;}
 let startBMI=startWeight && height?startWeight/(height/100)**2:null;
@@ -193,12 +192,10 @@ let currentBMI=current && height?current/(height/100)**2:null;
 document.getElementById("startBMI").innerText=startBMI?startBMI.toFixed(1):"-";
 document.getElementById("currentBMI").innerText=currentBMI?currentBMI.toFixed(1):"-";
 
-// BMI Farben
 function bmiColor(bmi){if(bmi<18.5) return "#add8e6"; else if(bmi<25) return "#ccffcc"; else if(bmi<30) return "#ffcc80"; else return "#ff9999";}
 document.getElementById("startBMIBox").style.background=bmiColor(startBMI);
 document.getElementById("currentBMIBox").style.background=bmiColor(currentBMI);
 
-// Altersgerechter Kommentar
 if(currentBMI && birthYear){
 let age=(new Date()).getFullYear()-birthYear;
 let comment="";
@@ -209,11 +206,9 @@ else comment="Adipositas";
 document.getElementById("ageBMIComment").innerText=`BMI Kommentar (${age} Jahre): ${comment}`;
 } else {document.getElementById("ageBMIComment").innerText="BMI Kommentar: -";}
 
-// Gewichtsdifferenzen
 document.getElementById("diffWeight").innerText=current&&startWeight?(current-startWeight).toFixed(1)+" kg":"-";
 if(goalWeight){document.getElementById("goalDiff").innerText=(current-goalWeight).toFixed(1)+" kg";}
 
-// Wochen-Durchschnitt
 let now=new Date(),week=[];
 data.forEach(e=>{
 let d=new Date(e.date);
@@ -221,8 +216,6 @@ let diff=(now-d)/(1000*60*60*24);
 if(diff<=7) week.push(e.weight);
 });
 document.getElementById("weekAvg").innerText=(week.length>0?(week.reduce((a,b)=>a+b)/week.length).toFixed(1)+" kg":"-");
-
-// Bestes Gewicht
 document.getElementById("bestWeight").innerText=(data.length>0?Math.min(...data.map(e=>e.weight)).toFixed(1)+" kg":"-");
 
 updateTrend(data,startWeight,goalWeight);
@@ -230,6 +223,7 @@ updateTrend(data,startWeight,goalWeight);
 
 function updateChart(){
 let data=JSON.parse(localStorage.getItem("weights")||"[]");
+if(data.length===0){if(chart) chart.destroy(); return;}
 data.sort((a,b)=> new Date(a.date)-new Date(b.date));
 const filter=document.getElementById("filter").value;
 const now=new Date();
@@ -240,17 +234,16 @@ if(filter=="month") return (now-d)/(1000*60*60*24)<=30;
 if(filter=="year") return (now-d)/(1000*60*60*24)<=365;
 return true;
 });
+if(filtered.length===0){if(chart) chart.destroy(); return;}
+
 let labels=filtered.map(e=>e.date);
 let values=filtered.map(e=>e.weight);
-
 let goalWeight=parseFloat(localStorage.getItem("goalWeight"));
 
-// Prognose Linie
 let trendLine=[];
-if(data.length>1 && goalWeight){
-data.sort((a,b)=> new Date(a.date)-new Date(b.date));
-let first=data[0].weight,last=data[data.length-1].weight;
-let days=(new Date(data[data.length-1].date)-new Date(data[0].date))/(1000*60*60*24);
+if(filtered.length>1 && goalWeight){
+let first=filtered[0].weight,last=filtered[filtered.length-1].weight;
+let days=(new Date(filtered[filtered.length-1].date)-new Date(filtered[0].date))/(1000*60*60*24);
 if(days>0){
 let rate=(last-first)/days;
 trendLine=labels.map((l,i)=> last + rate*(i));
@@ -266,13 +259,11 @@ data:{labels:labels,datasets:[
 (trendLine.length>0?{label:"Prognose Gewicht",data:trendLine,borderColor:"#34c759",borderDash:[5,5],fill:false}:null)
 ].filter(Boolean)},
 options:{
-plugins:{legend:{display:true}},
 responsive:true,
 maintainAspectRatio:false,
-scales:{
-y:{beginAtZero:false}
-},
+plugins:{legend:{display:true}},
 interaction:{mode:'index',intersect:false},
+scales:{y:{beginAtZero:false,suggestedMin:Math.min(...values)-5,suggestedMax:Math.max(...values)+5}}
 }
 });
 }
