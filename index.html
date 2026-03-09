@@ -50,9 +50,8 @@ box-shadow:0 3px 10px rgba(0,0,0,0.1);
 }
 
 input{
-padding:10px;
-margin:6px;
-font-size:16px;
+padding:8px;
+font-size:15px;
 border-radius:8px;
 border:1px solid #ccc;
 }
@@ -72,11 +71,20 @@ text-align:center;
 font-size:16px;
 }
 
-.chartFilter{
-margin-bottom:15px;
-display:flex;
-gap:8px;
-flex-wrap:wrap;
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+padding:8px;
+border-bottom:1px solid #ddd;
+text-align:center;
+}
+
+.deleteBtn{
+background:#ff3b30;
 }
 
 </style>
@@ -84,9 +92,7 @@ flex-wrap:wrap;
 
 <body>
 
-<header>
-Gewicht Tracker
-</header>
+<header>Gewicht Tracker</header>
 
 <nav>
 <button onclick="showPage('home')">Übersicht</button>
@@ -98,23 +104,16 @@ Gewicht Tracker
 
 <h3>Startdaten</h3>
 
-<div>
-
 Startgewicht (kg)
-
 <input type="number" id="startWeight">
 
 Zielgewicht (kg)
-
 <input type="number" id="goalWeight">
 
 Körpergröße (cm)
-
 <input type="number" id="height">
 
 <button onclick="saveStart()">Speichern</button>
-
-</div>
 
 
 <div class="stats">
@@ -149,35 +148,44 @@ Wochendurchschnitt<br>
 
 <h3 style="margin-top:20px;">Gewichtsentwicklung</h3>
 
-<div class="chartFilter">
-<button onclick="updateChart('week')">Woche</button>
-<button onclick="updateChart('month')">Monat</button>
-<button onclick="updateChart('year')">Jahr</button>
-<button onclick="updateChart('all')">Gesamt</button>
-</div>
-
 <canvas id="chart"></canvas>
 
 </div>
 
 
+
 <div id="entry" class="container" style="display:none">
 
-<h3>Tagesgewicht eintragen</h3>
+<h3>Gewicht eintragen</h3>
 
 Datum
-
 <input type="date" id="date">
 
 Gewicht (kg)
-
 <input type="number" id="weight">
-
-<br>
 
 <button onclick="addWeight()">Speichern</button>
 
+
+<h3 style="margin-top:25px;">Alle Einträge</h3>
+
+<table>
+
+<thead>
+<tr>
+<th>Datum</th>
+<th>Gewicht</th>
+<th>Speichern</th>
+<th>Löschen</th>
+</tr>
+</thead>
+
+<tbody id="weightTable"></tbody>
+
+</table>
+
 </div>
+
 
 
 <script>
@@ -190,6 +198,8 @@ document.getElementById("home").style.display="none"
 document.getElementById("entry").style.display="none"
 
 document.getElementById(page).style.display="block"
+
+renderTable()
 
 }
 
@@ -218,10 +228,78 @@ data.sort((a,b)=>new Date(a.date)-new Date(b.date))
 
 localStorage.setItem("weights",JSON.stringify(data))
 
+renderTable()
 updateStats()
-updateChart("all")
+updateChart()
 
-alert("Gespeichert")
+}
+
+
+function renderTable(){
+
+let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+let table=document.getElementById("weightTable")
+
+table.innerHTML=""
+
+data.forEach((e,i)=>{
+
+table.innerHTML+=`
+
+<tr>
+
+<td>
+<input type="date" value="${e.date}" id="date${i}">
+</td>
+
+<td>
+<input type="number" value="${e.weight}" id="weight${i}">
+</td>
+
+<td>
+<button onclick="saveEdit(${i})">💾</button>
+</td>
+
+<td>
+<button class="deleteBtn" onclick="deleteEntry(${i})">X</button>
+</td>
+
+</tr>
+
+`
+
+})
+
+}
+
+
+function saveEdit(i){
+
+let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+data[i].date=document.getElementById("date"+i).value
+data[i].weight=parseFloat(document.getElementById("weight"+i).value)
+
+localStorage.setItem("weights",JSON.stringify(data))
+
+updateStats()
+updateChart()
+
+}
+
+
+function deleteEntry(i){
+
+let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+data.splice(i,1)
+
+localStorage.setItem("weights",JSON.stringify(data))
+
+renderTable()
+updateStats()
+updateChart()
 
 }
 
@@ -246,21 +324,14 @@ current=data[data.length-1].weight
 
 let h=height/100
 
-let startBMI=(startWeight/(h*h)).toFixed(1)
-let currentBMI=(current/(h*h)).toFixed(1)
+document.getElementById("startBMI").innerText=(startWeight/(h*h)).toFixed(1)
+document.getElementById("currentBMI").innerText=(current/(h*h)).toFixed(1)
 
-document.getElementById("startBMI").innerText=startBMI
-document.getElementById("currentBMI").innerText=currentBMI
-
-let diff=(current-startWeight).toFixed(1)
-
-document.getElementById("diffWeight").innerText=diff+" kg"
+document.getElementById("diffWeight").innerText=(current-startWeight).toFixed(1)+" kg"
 
 if(goalWeight){
 
-let goal=(current-goalWeight).toFixed(1)
-
-document.getElementById("goalDiff").innerText=goal+" kg"
+document.getElementById("goalDiff").innerText=(current-goalWeight).toFixed(1)+" kg"
 
 }
 
@@ -300,36 +371,12 @@ document.getElementById("weekAvg").innerText=avg.toFixed(1)+" kg"
 }
 
 
-function updateChart(range){
+function updateChart(){
 
 let data=JSON.parse(localStorage.getItem("weights")||"[]")
 
-let labels=[]
-let values=[]
-
-let now=new Date()
-
-data.forEach(e=>{
-
-let d=new Date(e.date)
-
-let diff=(now-d)/(1000*60*60*24)
-
-let show=false
-
-if(range=="week" && diff<=7) show=true
-if(range=="month" && diff<=30) show=true
-if(range=="year" && diff<=365) show=true
-if(range=="all") show=true
-
-if(show){
-
-labels.push(e.date)
-values.push(e.weight)
-
-}
-
-})
+let labels=data.map(e=>e.date)
+let values=data.map(e=>e.weight)
 
 if(chart) chart.destroy()
 
@@ -352,7 +399,7 @@ tension:0.3
 
 
 updateStats()
-updateChart("all")
+updateChart()
 
 </script>
 
