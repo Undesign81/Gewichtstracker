@@ -22,12 +22,14 @@ td button{padding:6px 10px;font-size:14px;margin:0 2px;}
 .resetBtn{background:#ff3b30;margin-top:15px;}
 #filter{margin:10px 0;font-size:16px;padding:6px;}
 .recommend{margin-top:10px;font-size:15px;color:#555;}
-canvas{height:300px !important;}
+.chart-container{overflow-x:auto;}
+canvas{height:300px;min-width:600px;}
 @media(max-width:500px){
   nav{flex-direction:column;}
   td{flex-direction:column; gap:4px;}
   td input{width:80%;}
   td button{width:80%;}
+  canvas{min-width:400px;}
 }
 </style>
 </head>
@@ -69,7 +71,9 @@ Geburtsjahr<input type="number" id="birthYear" onchange="saveStart()">
 <option value="year">Letztes Jahr</option>
 </select>
 
+<div class="chart-container">
 <canvas id="chart"></canvas>
+</div>
 <p id="trend" style="margin-top:10px;font-size:16px;"></p>
 
 </div>
@@ -254,16 +258,19 @@ if(chart) chart.destroy();
 chart=new Chart(document.getElementById("chart"),{
 type:"line",
 data:{labels:labels,datasets:[
-{label:"Gewicht",data:values,tension:0.3,borderColor:"#007aff",backgroundColor:"rgba(0,122,255,0.1)"},
-(goalWeight?{label:"Zielgewicht",data:Array(labels.length).fill(goalWeight),borderColor:"#ff3b30",borderDash:[5,5],fill:false}:null),
-(trendLine.length>0?{label:"Prognose Gewicht",data:trendLine,borderColor:"#34c759",borderDash:[5,5],fill:false}:null)
+{label:"Gewicht",data:values,tension:0.3,borderColor:"#007aff",backgroundColor:"rgba(0,122,255,0.1)",pointRadius:3},
+(goalWeight?{label:"Zielgewicht",data:Array(labels.length).fill(goalWeight),borderColor:"#ff3b30",borderDash:[5,5],fill:false,pointRadius:0}:null),
+(trendLine.length>0?{label:"Prognose Gewicht",data:trendLine,borderColor:"#34c759",borderDash:[5,5],fill:false,pointRadius:0}:null)
 ].filter(Boolean)},
 options:{
 responsive:true,
 maintainAspectRatio:false,
 plugins:{legend:{display:true}},
 interaction:{mode:'index',intersect:false},
-scales:{y:{beginAtZero:false,suggestedMin:Math.min(...values)-5,suggestedMax:Math.max(...values)+5}}
+scales:{
+x:{type:'time',time:{unit:'day',tooltipFormat:'dd.MM.yyyy'},title:{display:true,text:'Datum'}},
+y:{beginAtZero:false,suggestedMin:Math.min(...values)-5,suggestedMax:Math.max(...values)+5,title:{display:true,text:'Gewicht (kg)'}}
+}
 }
 });
 }
