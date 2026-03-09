@@ -11,11 +11,13 @@ header{background:#007aff;color:white;padding:18px;text-align:center;font-size:2
 nav{display:flex;justify-content:center;gap:10px;margin:15px;}
 button{padding:10px 14px;border:none;background:#007aff;color:white;border-radius:10px;font-size:15px;cursor:pointer;}
 .container{max-width:900px;margin:auto;background:white;padding:20px;border-radius:14px;box-shadow:0 3px 10px rgba(0,0,0,0.1);}
-input{padding:8px;font-size:15px;border-radius:8px;border:1px solid #ccc;margin:5px;}
+input{padding:6px;font-size:15px;border-radius:8px;border:1px solid #ccc;margin:5px;}
 .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:15px;}
 .statBox{background:#f2f2f7;padding:12px;border-radius:10px;text-align:center;font-size:16px;}
-table{width:100%;border-collapse:collapse;margin-top:20px;}
-th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center;}
+table{width:100%;border-collapse:collapse;margin-top:20px;table-layout:auto;}
+th,td{padding:6px;border-bottom:1px solid #ddd;text-align:center;word-break:break-word; display:flex; justify-content:center; align-items:center; gap:5px;}
+td input{width:70px;}
+td button{padding:4px 8px;font-size:14px;margin:0 2px;}
 .deleteBtn{background:#ff3b30;}
 .resetBtn{background:#ff3b30;margin-top:15px;}
 #filter{margin:10px 0;font-size:16px;padding:6px;}
@@ -37,6 +39,7 @@ th,td{padding:8px;border-bottom:1px solid #ddd;text-align:center;}
 Startgewicht (kg)<input type="number" id="startWeight" onchange="saveStart()">
 Zielgewicht (kg)<input type="number" id="goalWeight" onchange="saveStart()">
 Körpergröße (cm)<input type="number" id="height" onchange="saveStart()">
+Geburtsjahr<input type="number" id="birthYear" onchange="saveStart()">
 <button class="resetBtn" onclick="resetApp()">App komplett zurücksetzen</button>
 
 <div class="recommend" id="normalWeightRec">Empfohlen: - kg</div>
@@ -100,6 +103,7 @@ function saveStart(){
 localStorage.setItem("startWeight",document.getElementById("startWeight").value)
 localStorage.setItem("goalWeight",document.getElementById("goalWeight").value)
 localStorage.setItem("height",document.getElementById("height").value)
+localStorage.setItem("birthYear",document.getElementById("birthYear").value)
 updateStats()
 updateChart()
 }
@@ -159,12 +163,14 @@ function updateStats(){
 let startWeight=parseFloat(localStorage.getItem("startWeight"))
 let goalWeight=parseFloat(localStorage.getItem("goalWeight"))
 let height=parseFloat(localStorage.getItem("height"))
+let birthYear=parseInt(localStorage.getItem("birthYear"))
 let data=JSON.parse(localStorage.getItem("weights")||[])
 
 // Startwerte sichtbar machen
 document.getElementById("startWeight").value=startWeight||""
 document.getElementById("goalWeight").value=goalWeight||""
 document.getElementById("height").value=height||""
+document.getElementById("birthYear").value=birthYear||""
 
 // Normalgewicht Empfehlung
 if(height){
