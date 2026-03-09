@@ -43,6 +43,7 @@ Geburtsjahr<input type="number" id="birthYear" onchange="saveStart()">
 <button class="resetBtn" onclick="resetApp()">App komplett zurücksetzen</button>
 
 <div class="recommend" id="normalWeightRec">Empfohlen: - kg</div>
+<div class="recommend" id="ageBMIComment">BMI Kommentar: -</div>
 
 <div class="stats">
 <div class="statBox">Start BMI<br><span id="startBMI">-</span></div>
@@ -166,7 +167,6 @@ let height=parseFloat(localStorage.getItem("height"))
 let birthYear=parseInt(localStorage.getItem("birthYear"))
 let data=JSON.parse(localStorage.getItem("weights")||[])
 
-// Startwerte sichtbar machen
 document.getElementById("startWeight").value=startWeight||""
 document.getElementById("goalWeight").value=goalWeight||""
 document.getElementById("height").value=height||""
@@ -178,14 +178,24 @@ let h=height/100
 let min=18.5*h*h
 let max=24.9*h*h
 document.getElementById("normalWeightRec").innerText=`Empfohlen: ${min.toFixed(1)}–${max.toFixed(1)} kg`
-} else {
-document.getElementById("normalWeightRec").innerText="Empfohlen: - kg"
-}
+} else {document.getElementById("normalWeightRec").innerText="Empfohlen: - kg"}
+
+// Alter BMI Kommentar
+let current=startWeight
+if(data.length>0){data.sort((a,b)=> new Date(a.date)-new Date(b.date));current=data[data.length-1].weight}
+if(height && birthYear){
+let age=(new Date()).getFullYear()-birthYear
+let bmi=(current/(height/100)**2)
+let comment=""
+if(bmi<18.5) comment="Untergewicht"
+else if(bmi<25) comment="Normalgewicht"
+else if(bmi<30) comment="Übergewicht"
+else comment="Adipositas"
+document.getElementById("ageBMIComment").innerText=`BMI Kommentar (${age} Jahre): ${comment}`
+} else {document.getElementById("ageBMIComment").innerText="BMI Kommentar: -"}
 
 if(!startWeight || !height) return
 
-let current=startWeight
-if(data.length>0){data.sort((a,b)=> new Date(a.date)-new Date(b.date));current=data[data.length-1].weight}
 let h=height/100
 document.getElementById("startBMI").innerText=(startWeight/(h*h)).toFixed(1)
 document.getElementById("currentBMI").innerText=(current/(h*h)).toFixed(1)
@@ -203,7 +213,6 @@ document.getElementById("weekAvg").innerText=(week.length>0?(week.reduce((a,b)=>
 // Bestes Gewicht
 document.getElementById("bestWeight").innerText=(data.length>0?Math.min(...data.map(e=>e.weight)).toFixed(1)+" kg":"-")
 
-// Trend-Prognose
 updateTrend(data,startWeight,goalWeight)
 }
 
@@ -224,12 +233,25 @@ let values=filtered.map(e=>e.weight)
 
 let goalWeight=parseFloat(localStorage.getItem("goalWeight"))
 
+// Prognose Linie berechnen
+let trendLine=[]
+if(data.length>1 && goalWeight){
+data.sort((a,b)=> new Date(a.date)-new Date(b.date))
+let first=data[0].weight,last=data[data.length-1].weight
+let days=(new Date(data[data.length-1].date)-new Date(data[0].date))/(1000*60*60*24)
+if(days>0){
+let rate=(last-first)/days
+trendLine=labels.map((l,i)=> last + rate*(i))
+}
+}
+
 if(chart) chart.destroy()
 chart=new Chart(document.getElementById("chart"),{
 type:"line",
 data:{labels:labels,datasets:[
 {label:"Gewicht",data:values,tension:0.3,borderColor:"#007aff",backgroundColor:"rgba(0,122,255,0.1)"},
-(goalWeight?{label:"Zielgewicht",data:Array(labels.length).fill(goalWeight),borderColor:"#ff3b30",borderDash:[5,5],fill:false}:null)
+(goalWeight?{label:"Zielgewicht",data:Array(labels.length).fill(goalWeight),borderColor:"#ff3b30",borderDash:[5,5],fill:false}:null),
+(trendLine.length>0?{label:"Prognose Gewicht",data:trendLine,borderColor:"#34c759",borderDash:[5,5],fill:false}:null)
 ].filter(Boolean)},
 options:{plugins:{legend:{display:true}}}
 })
@@ -256,7 +278,6 @@ function setDefaultDate(){
 document.getElementById("date").value=new Date().toISOString().substr(0,10)
 }
 
-// Initial
 updateStats()
 updateChart()
 setDefaultDate()
