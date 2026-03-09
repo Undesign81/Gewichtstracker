@@ -38,6 +38,7 @@ background:#007aff;
 color:white;
 border-radius:10px;
 font-size:15px;
+cursor:pointer;
 }
 
 .container{
@@ -54,6 +55,7 @@ padding:8px;
 font-size:15px;
 border-radius:8px;
 border:1px solid #ccc;
+margin:5px;
 }
 
 .stats{
@@ -87,6 +89,11 @@ text-align:center;
 background:#ff3b30;
 }
 
+.resetBtn{
+background:#ff3b30;
+margin-top:15px;
+}
+
 </style>
 </head>
 
@@ -114,6 +121,12 @@ Körpergröße (cm)
 <input type="number" id="height">
 
 <button onclick="saveStart()">Speichern</button>
+
+<br>
+
+<button class="resetBtn" onclick="resetApp()">
+App komplett zurücksetzen
+</button>
 
 
 <div class="stats">
@@ -144,7 +157,6 @@ Wochendurchschnitt<br>
 </div>
 
 </div>
-
 
 <h3 style="margin-top:20px;">Gewichtsentwicklung</h3>
 
@@ -192,6 +204,7 @@ Gewicht (kg)
 
 let chart
 
+
 function showPage(page){
 
 document.getElementById("home").style.display="none"
@@ -202,6 +215,7 @@ document.getElementById(page).style.display="block"
 renderTable()
 
 }
+
 
 
 function saveStart(){
@@ -215,6 +229,7 @@ updateStats()
 }
 
 
+
 function addWeight(){
 
 let data=JSON.parse(localStorage.getItem("weights")||"[]")
@@ -223,8 +238,6 @@ data.push({
 date:document.getElementById("date").value,
 weight:parseFloat(document.getElementById("weight").value)
 })
-
-data.sort((a,b)=>new Date(a.date)-new Date(b.date))
 
 localStorage.setItem("weights",JSON.stringify(data))
 
@@ -235,9 +248,12 @@ updateChart()
 }
 
 
+
 function renderTable(){
 
 let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+data.sort((a,b)=> new Date(b.date) - new Date(a.date))
 
 let table=document.getElementById("weightTable")
 
@@ -274,9 +290,12 @@ table.innerHTML+=`
 }
 
 
+
 function saveEdit(i){
 
 let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+data.sort((a,b)=> new Date(b.date) - new Date(a.date))
 
 data[i].date=document.getElementById("date"+i).value
 data[i].weight=parseFloat(document.getElementById("weight"+i).value)
@@ -289,9 +308,12 @@ updateChart()
 }
 
 
+
 function deleteEntry(i){
 
 let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+data.sort((a,b)=> new Date(b.date) - new Date(a.date))
 
 data.splice(i,1)
 
@@ -302,6 +324,7 @@ updateStats()
 updateChart()
 
 }
+
 
 
 function updateStats(){
@@ -317,6 +340,8 @@ if(!startWeight || !height) return
 let current=startWeight
 
 if(data.length>0){
+
+data.sort((a,b)=> new Date(a.date) - new Date(b.date))
 
 current=data[data.length-1].weight
 
@@ -338,6 +363,7 @@ document.getElementById("goalDiff").innerText=(current-goalWeight).toFixed(1)+" 
 calculateWeekAverage()
 
 }
+
 
 
 function calculateWeekAverage(){
@@ -371,9 +397,12 @@ document.getElementById("weekAvg").innerText=avg.toFixed(1)+" kg"
 }
 
 
+
 function updateChart(){
 
 let data=JSON.parse(localStorage.getItem("weights")||"[]")
+
+data.sort((a,b)=> new Date(a.date) - new Date(b.date))
 
 let labels=data.map(e=>e.date)
 let values=data.map(e=>e.weight)
@@ -396,6 +425,21 @@ tension:0.3
 })
 
 }
+
+
+
+function resetApp(){
+
+if(confirm("Alle Daten wirklich löschen?")){
+
+localStorage.clear()
+
+location.reload()
+
+}
+
+}
+
 
 
 updateStats()
